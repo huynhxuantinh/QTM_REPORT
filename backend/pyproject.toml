@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "network-health-check"
+version = "0.1.0"
+description = "Cisco IOS network health collector using Netmiko"
+requires-python = ">=3.11"
+dependencies = [
+  "netmiko>=4.5,<5",
+  # Paramiko 5 removed the group1 KEX required by the Cisco 3660 IOS lab.
+  "paramiko>=3.5.1,<4",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
