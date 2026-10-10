@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.dependencies import get_settings
-from app.api.routes import devices, health
+from app.api.routes import checks, devices, health
 from app.core.config import Settings
 
 
@@ -21,6 +21,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     application.include_router(health.router, prefix="/api/v1")
     application.include_router(devices.router, prefix="/api/v1")
+    application.include_router(checks.router, prefix="/api/v1")
     return application
 
 

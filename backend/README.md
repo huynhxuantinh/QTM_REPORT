@@ -31,3 +31,14 @@ Invoke-RestMethod http://127.0.0.1:8001/api/v1/health
 
 Swagger UI: `http://127.0.0.1:8001/docs`. PostgreSQL Docker được ánh xạ ra
 `127.0.0.1:5434` để không xung đột PostgreSQL đang có trên máy.
+
+## API health check
+
+```text
+POST /api/v1/devices/{device_id}/checks   # tạo lần kiểm tra, trả 202
+GET  /api/v1/checks/{check_id}            # xem kết quả chi tiết
+GET  /api/v1/devices/{device_id}/history  # xem lịch sử
+```
+
+Kết quả lưu trong PostgreSQL gồm trạng thái tổng, CPU, RAM, uptime, SSH,
+interface/counter, packet loss, latency và danh sách nguyên nhân cảnh báo.
