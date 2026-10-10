@@ -5,6 +5,7 @@ from app.db.models.health_check import (
     InterfaceResult,
     PingResult,
 )
+from app.db.models.scan_run import ScanRun
 
 __all__ = [
     "Device",
@@ -12,4 +13,5 @@ __all__ = [
     "HealthFindingResult",
     "InterfaceResult",
     "PingResult",
+    "ScanRun",
 ]

@@ -8,6 +8,8 @@ from app.api.dependencies import (
     HealthCheckRunner,
     get_health_check_runner,
     get_health_check_service,
+    get_scan_run_runner,
+    get_scan_run_service,
 )
 from app.schemas.health_checks import (
     CheckAccepted,
@@ -21,6 +23,12 @@ from app.services.health_checks import (
     DeviceInactiveError,
     HealthCheckService,
 )
+from app.schemas.scan_runs import ScanRunAccepted, ScanRunRead
+from app.services.scan_runs import (
+    ScanAlreadyRunningError,
+    ScanRunNotFoundError,
+    ScanRunService,
+)
 
 
 router = APIRouter(tags=["health-checks"])
@@ -30,6 +38,8 @@ ServiceDependency = Annotated[
 RunnerDependency = Annotated[
     HealthCheckRunner, Depends(get_health_check_runner)
 ]
+ScanServiceDependency = Annotated[ScanRunService, Depends(get_scan_run_service)]
+ScanRunnerDependency = Annotated[HealthCheckRunner, Depends(get_scan_run_runner)]
 
 
 def translate_error(error: Exception) -> HTTPException:
@@ -37,7 +47,39 @@ def translate_error(error: Exception) -> HTTPException:
         return HTTPException(status_code=404, detail=str(error))
     if isinstance(error, (CheckAlreadyRunningError, DeviceInactiveError)):
         return HTTPException(status_code=409, detail=str(error))
+    if isinstance(error, ScanRunNotFoundError):
+        return HTTPException(status_code=404, detail=str(error))
+    if isinstance(error, ScanAlreadyRunningError):
+        return HTTPException(status_code=409, detail=str(error))
     raise error
+
+
+@router.post(
+    "/checks/run-all",
+    response_model=ScanRunAccepted,
+    status_code=202,
+)
+def run_all_checks(
+    service: ScanServiceDependency,
+    runner: ScanRunnerDependency,
+) -> ScanRunAccepted:
+    try:
+        scan = service.start("manual")
+    except ScanAlreadyRunningError as error:
+        raise translate_error(error) from error
+    runner(scan.id)
+    return ScanRunAccepted.model_validate(scan)
+
+
+@router.get("/scan-runs/{scan_id}", response_model=ScanRunRead)
+def get_scan_run(
+    scan_id: int,
+    service: ScanServiceDependency,
+) -> ScanRunRead:
+    try:
+        return ScanRunRead.model_validate(service.get(scan_id))
+    except ScanRunNotFoundError as error:
+        raise translate_error(error) from error
 
 
 @router.post(

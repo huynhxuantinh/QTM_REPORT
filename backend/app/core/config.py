@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import cached_property
 from ipaddress import IPv4Network, IPv6Network, ip_network
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,9 @@ class Settings(BaseSettings):
     credential_key: str = ""
     lab_cidrs: str = "192.168.141.0/24,192.168.91.0/24"
     cors_origins: str = "http://localhost:3000"
+    scheduler_enabled: bool = False
+    scheduler_interval_minutes: int = Field(default=15, ge=1)
+    max_concurrent_checks: int = Field(default=3, ge=1, le=10)
 
     model_config = SettingsConfigDict(
         env_file=".env",

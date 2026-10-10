@@ -67,6 +67,18 @@ class DeviceRepository:
         self._session.refresh(device)
         return device
 
+    def list_active_ids(self) -> list[int]:
+        return list(
+            self._session.scalars(
+                select(Device.id)
+                .where(
+                    Device.deleted_at.is_(None),
+                    Device.is_active.is_(True),
+                )
+                .order_by(Device.id)
+            )
+        )
+
     def soft_delete(self, device: Device) -> None:
         device.deleted_at = datetime.now(timezone.utc)
         device.is_active = False

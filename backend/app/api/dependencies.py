@@ -14,6 +14,8 @@ from app.repositories.devices import DeviceRepository
 from app.services.devices import DeviceService
 from app.services.collectors.cisco_ios import CiscoIosCollector
 from app.services.health_checks import HealthCheckService
+from app.services.scan_runner import ThreadedScanRunner
+from app.services.scan_runs import ScanRunService
 
 
 @lru_cache
@@ -63,3 +65,18 @@ def get_health_check_runner(
             service.execute(check_id)
 
     return run
+
+
+def get_scan_run_service(
+    db: Annotated[Session, Depends(get_db)],
+) -> ScanRunService:
+    return ScanRunService(db)
+
+
+ScanRunRunner = Callable[[int], None]
+
+
+def get_scan_run_runner(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ScanRunRunner:
+    return ThreadedScanRunner(settings)

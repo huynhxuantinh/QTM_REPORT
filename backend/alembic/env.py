@@ -13,6 +13,7 @@ from app.db.models import (  # noqa: F401
     HealthFindingResult,
     InterfaceResult,
     PingResult,
+    ScanRun,
 )
 
 

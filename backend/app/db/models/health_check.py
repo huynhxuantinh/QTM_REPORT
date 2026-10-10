@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
@@ -17,6 +18,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.scan_run import ScanRun
 
 
 def utc_now() -> datetime:
@@ -45,6 +49,9 @@ class HealthCheck(Base):
     device_id: Mapped[int] = mapped_column(
         ForeignKey("devices.id", ondelete="RESTRICT"), nullable=False
     )
+    scan_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("scan_runs.id", ondelete="SET NULL"), index=True
+    )
     execution_status: Mapped[str] = mapped_column(
         String(20), nullable=False, default="running"
     )
@@ -62,6 +69,8 @@ class HealthCheck(Base):
     memory_used_bytes: Mapped[int | None] = mapped_column(BigInteger)
     memory_free_bytes: Mapped[int | None] = mapped_column(BigInteger)
     error: Mapped[str | None] = mapped_column(Text)
+
+    scan_run: Mapped[ScanRun | None] = relationship(back_populates="checks")
 
     interfaces: Mapped[list[InterfaceResult]] = relationship(
         back_populates="health_check",

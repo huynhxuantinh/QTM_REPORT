@@ -9,6 +9,7 @@ description = "Cisco IOS network health collector using Netmiko"
 requires-python = ">=3.11"
 dependencies = [
   "alembic>=1.20,<2",
+  "apscheduler>=3.11,<4",
   "cryptography>=46,<47",
   "fastapi>=0.143,<1",
   "netmiko>=4.5,<5",
