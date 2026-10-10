@@ -84,6 +84,7 @@ class HealthCheckService:
                     if device.encrypted_secret
                     else None
                 ),
+                path_ping_target=device.path_ping_target,
             )
             report = self._collector.collect(config)
             self._apply_report(health_check, report, config)

@@ -52,6 +52,7 @@ class Device(Base):
     encrypted_password: Mapped[str] = mapped_column(Text, nullable=False)
     encrypted_secret: Mapped[str | None] = mapped_column(Text)
     site: Mapped[str | None] = mapped_column(String(120), index=True)
+    path_ping_target: Mapped[str | None] = mapped_column(String(45))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False

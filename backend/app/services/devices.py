@@ -51,6 +51,7 @@ class DeviceService:
                 self._cipher.encrypt(payload.secret) if payload.secret else None
             ),
             site=payload.site,
+            path_ping_target=payload.path_ping_target,
             is_active=payload.is_active,
         )
         return self._repository.create(device)

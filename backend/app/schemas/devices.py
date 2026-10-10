@@ -14,12 +14,18 @@ class DeviceFields(BaseModel):
     device_type: Literal["cisco_ios"] = "cisco_ios"
     username: str = Field(min_length=1, max_length=120)
     site: str | None = Field(default=None, max_length=120)
+    path_ping_target: str | None = None
     is_active: bool = True
 
     @field_validator("host")
     @classmethod
     def normalize_host(cls, value: str) -> str:
         return str(ip_address(value))
+
+    @field_validator("path_ping_target")
+    @classmethod
+    def normalize_path_ping_target(cls, value: str | None) -> str | None:
+        return str(ip_address(value)) if value is not None else None
 
 
 class DeviceCreate(DeviceFields):
@@ -36,11 +42,17 @@ class DeviceUpdate(BaseModel):
     password: str | None = Field(default=None, min_length=1, max_length=512)
     secret: str | None = Field(default=None, max_length=512)
     site: str | None = Field(default=None, max_length=120)
+    path_ping_target: str | None = None
     is_active: bool | None = None
 
     @field_validator("host")
     @classmethod
     def normalize_host(cls, value: str | None) -> str | None:
+        return str(ip_address(value)) if value is not None else None
+
+    @field_validator("path_ping_target")
+    @classmethod
+    def normalize_path_ping_target(cls, value: str | None) -> str | None:
         return str(ip_address(value)) if value is not None else None
 
 
@@ -54,6 +66,7 @@ class DeviceRead(BaseModel):
     device_type: str
     username: str
     site: str | None
+    path_ping_target: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
