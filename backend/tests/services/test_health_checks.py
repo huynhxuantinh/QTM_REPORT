@@ -23,6 +23,7 @@ from app.services.health_checks import (
 class FakeCollector:
     def collect(self, config) -> NetworkHealthReport:
         assert config.password == "qtm"
+        assert config.path_ping_target == "192.168.141.128"
         return sample_report()
 
 
@@ -59,7 +60,7 @@ def sample_report() -> NetworkHealthReport:
             )
         ],
         management_ping=PingMetrics(0.0, 1.0, 1.5, 2.0),
-        path_ping=None,
+        path_ping=PingMetrics(0.0, 2.0, 2.5, 3.0),
         findings=[HealthFinding("Warning", "cpu", "CPU is elevated")],
     )
 
@@ -76,6 +77,7 @@ def create_device(session: Session, cipher: CredentialCipher) -> Device:
         site="GNS3",
         is_active=True,
     )
+    device.path_ping_target = "192.168.141.128"
     session.add(device)
     session.commit()
     session.refresh(device)
@@ -103,6 +105,9 @@ def test_execute_persists_complete_health_report(
         assert completed.pings[0].source_type == "backend"
         assert completed.pings[0].packet_loss_percent == 0.0
         assert completed.pings[0].latency_avg_ms == 1.5
+        assert completed.pings[1].source_type == "device"
+        assert completed.pings[1].target == "192.168.141.128"
+        assert completed.pings[1].latency_avg_ms == 2.5
         assert completed.findings[0].severity == "Warning"
         assert completed.finished_at is not None
 

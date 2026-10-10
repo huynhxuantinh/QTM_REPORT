@@ -17,6 +17,7 @@ DEVICE_PAYLOAD = {
     "password": "qtm",
     "secret": "enable-secret",
     "site": "GNS3-LAB",
+    "path_ping_target": "192.168.141.128",
 }
 
 
@@ -38,6 +39,7 @@ def test_device_crud_masks_and_encrypts_credentials(
     body = created.json()
     assert body["name"] == "R1"
     assert body["host"] == "192.168.141.11"
+    assert body["path_ping_target"] == "192.168.141.128"
     assert "password" not in body
     assert "secret" not in body
     device_id = body["id"]
@@ -50,6 +52,7 @@ def test_device_crud_masks_and_encrypts_credentials(
     fetched = client.get(f"/api/v1/devices/{device_id}")
     assert fetched.status_code == 200
     assert fetched.json()["name"] == "R1"
+    assert fetched.json()["path_ping_target"] == "192.168.141.128"
 
     updated = client.patch(
         f"/api/v1/devices/{device_id}",
