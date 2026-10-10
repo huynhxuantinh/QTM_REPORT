@@ -22,7 +22,13 @@ def test_base_migration_builds_devices_table(tmp_path: Path) -> None:
     command.upgrade(config, "head")
 
     inspector = inspect(create_engine(database_url))
-    assert "devices" in inspector.get_table_names()
+    assert {
+        "devices",
+        "health_checks",
+        "interface_results",
+        "ping_results",
+        "health_findings",
+    }.issubset(inspector.get_table_names())
     assert "uq_devices_active_host_port" in {
         index["name"] for index in inspector.get_indexes("devices")
     }
