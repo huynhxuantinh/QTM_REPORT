@@ -2,12 +2,23 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.dependencies import get_settings
-from app.api.routes import checks, devices, health
+from app.api.dependencies import get_settings, require_admin
+from app.api.routes import (
+    auth,
+    checks,
+    dashboard,
+    devices,
+    health,
+    reports,
+    settings as settings_routes,
+)
 from app.core.config import Settings
+from app.db.session import SessionLocal
+from app.services.auth import ensure_admin_account
+from app.repositories.settings import SystemSettingRepository
 from app.services.scheduler import build_scheduler
 
 
@@ -17,8 +28,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         scheduler = None
+        if resolved_settings.auth_enabled:
+            with SessionLocal() as session:
+                ensure_admin_account(session, resolved_settings)
         if resolved_settings.scheduler_enabled:
-            scheduler = build_scheduler(resolved_settings)
+            with SessionLocal() as session:
+                stored = SystemSettingRepository(session).get_or_create()
+            scheduler_settings = resolved_settings.model_copy(
+                update={
+                    "scheduler_interval_minutes": (
+                        stored.scheduler_interval_minutes
+                    ),
+                    "max_concurrent_checks": stored.max_concurrent_checks,
+                }
+            )
+            scheduler = build_scheduler(scheduler_settings)
             scheduler.start()
             application.state.scheduler = scheduler
         yield
@@ -34,12 +58,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=resolved_settings.allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
     )
     application.include_router(health.router, prefix="/api/v1")
-    application.include_router(devices.router, prefix="/api/v1")
-    application.include_router(checks.router, prefix="/api/v1")
+    application.include_router(auth.router, prefix="/api/v1")
+    protected = [Depends(require_admin)]
+    application.include_router(
+        devices.router, prefix="/api/v1", dependencies=protected
+    )
+    application.include_router(
+        checks.router, prefix="/api/v1", dependencies=protected
+    )
+    application.include_router(
+        dashboard.router, prefix="/api/v1", dependencies=protected
+    )
+    application.include_router(
+        reports.router, prefix="/api/v1", dependencies=protected
+    )
+    application.include_router(
+        settings_routes.router, prefix="/api/v1", dependencies=protected
+    )
     return application
 
 

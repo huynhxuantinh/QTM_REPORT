@@ -4,9 +4,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
-from app.api.dependencies import get_device_service
+from app.api.dependencies import (
+    ConnectionTester,
+    get_connection_tester,
+    get_device_service,
+)
 from app.schemas.devices import (
     DeviceCreate,
+    ConnectionTestRead,
     DevicePage,
     DeviceRead,
     DeviceUpdate,
@@ -21,6 +26,9 @@ from app.services.devices import (
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 ServiceDependency = Annotated[DeviceService, Depends(get_device_service)]
+ConnectionTesterDependency = Annotated[
+    ConnectionTester, Depends(get_connection_tester)
+]
 
 
 def translate_service_error(error: Exception) -> HTTPException:
@@ -89,3 +97,16 @@ def delete_device(device_id: int, service: ServiceDependency) -> Response:
     except DeviceNotFoundError as error:
         raise translate_service_error(error) from error
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{device_id}/test-connection", response_model=ConnectionTestRead)
+def test_device_connection(
+    device_id: int,
+    service: ServiceDependency,
+    tester: ConnectionTesterDependency,
+) -> ConnectionTestRead:
+    try:
+        service.get(device_id)
+        return ConnectionTestRead.model_validate(tester(device_id))
+    except DeviceNotFoundError as error:
+        raise translate_service_error(error) from error

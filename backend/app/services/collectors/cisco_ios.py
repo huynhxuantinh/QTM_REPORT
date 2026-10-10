@@ -131,6 +131,7 @@ class CiscoIosCollector:
                 management_ping=management_ping,
                 path_ping=path_ping,
                 interfaces=interfaces,
+                thresholds=config.thresholds,
             )
             return NetworkHealthReport(
                 device_name=config.name,

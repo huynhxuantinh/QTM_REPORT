@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 
 from app.domain.models import (
     HealthEvaluation,
     HealthFinding,
     HealthStatus,
+    HealthThresholds,
     InterfaceMetrics,
     PingMetrics,
 )
@@ -19,8 +20,17 @@ def evaluate_health(
     management_ping: PingMetrics | None,
     path_ping: PingMetrics | None,
     interfaces: list[InterfaceMetrics],
+    thresholds: HealthThresholds | Mapping[str, float] | None = None,
 ) -> HealthEvaluation:
     findings: list[HealthFinding] = []
+    configured = thresholds or HealthThresholds()
+
+    def threshold(name: str) -> float:
+        if isinstance(configured, Mapping):
+            return float(
+                configured.get(name, getattr(HealthThresholds(), name))
+            )
+        return float(getattr(configured, name))
 
     def add(severity: HealthStatus, metric: str, message: str) -> None:
         findings.append(HealthFinding(severity, metric, message))
@@ -31,15 +41,15 @@ def evaluate_health(
     _evaluate_percentage(
         value=cpu_percent,
         metric="CPU",
-        warning_at=70.0,
-        critical_at=90.0,
+        warning_at=threshold("cpu_warning_percent"),
+        critical_at=threshold("cpu_critical_percent"),
         add=add,
     )
     _evaluate_percentage(
         value=ram_percent,
         metric="RAM",
-        warning_at=75.0,
-        critical_at=90.0,
+        warning_at=threshold("ram_warning_percent"),
+        critical_at=threshold("ram_critical_percent"),
         add=add,
     )
 
@@ -55,13 +65,17 @@ def evaluate_health(
     if path_ping is None:
         add("Warning", "path_ping", "Path ping data is unavailable")
     else:
-        if path_ping.packet_loss_percent >= 30:
+        if path_ping.packet_loss_percent >= threshold(
+            "packet_loss_critical_percent"
+        ):
             add(
                 "Critical",
                 "packet_loss",
                 f"Path packet loss is {path_ping.packet_loss_percent:g}%",
             )
-        elif path_ping.packet_loss_percent > 0:
+        elif path_ping.packet_loss_percent >= threshold(
+            "packet_loss_warning_percent"
+        ):
             add(
                 "Warning",
                 "packet_loss",
@@ -71,9 +85,9 @@ def evaluate_health(
         latency = path_ping.latency_avg_ms
         if latency is None:
             add("Warning", "latency", "Path latency data is unavailable")
-        elif latency > 150:
+        elif latency >= threshold("latency_critical_ms"):
             add("Critical", "latency", f"Average latency is {latency:g} ms")
-        elif latency >= 50:
+        elif latency >= threshold("latency_warning_ms"):
             add("Warning", "latency", f"Average latency is {latency:g} ms")
 
     for interface in interfaces:

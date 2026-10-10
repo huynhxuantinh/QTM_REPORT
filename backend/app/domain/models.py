@@ -8,6 +8,18 @@ HealthStatus = Literal["Healthy", "Warning", "Critical"]
 
 
 @dataclass(frozen=True, slots=True)
+class HealthThresholds:
+    cpu_warning_percent: float = 70.0
+    cpu_critical_percent: float = 90.0
+    ram_warning_percent: float = 75.0
+    ram_critical_percent: float = 90.0
+    packet_loss_warning_percent: float = 10.0
+    packet_loss_critical_percent: float = 30.0
+    latency_warning_ms: float = 50.0
+    latency_critical_ms: float = 150.0
+
+
+@dataclass(frozen=True, slots=True)
 class DeviceConfig:
     name: str
     host: str
@@ -18,6 +30,7 @@ class DeviceConfig:
     secret: str | None = None
     monitored_interfaces: tuple[str, ...] = ()
     path_ping_target: str | None = None
+    thresholds: HealthThresholds = field(default_factory=HealthThresholds)
 
 
 @dataclass(frozen=True, slots=True)

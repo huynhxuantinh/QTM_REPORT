@@ -77,3 +77,9 @@ class DevicePage(BaseModel):
     total: int
     offset: int
     limit: int
+
+
+class ConnectionTestRead(BaseModel):
+    device_id: int
+    reachable: bool
+    message: str

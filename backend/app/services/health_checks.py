@@ -16,6 +16,8 @@ from app.domain.models import DeviceConfig, NetworkHealthReport
 from app.repositories.devices import DeviceRepository
 from app.repositories.health_checks import HealthCheckRepository
 from app.services.devices import DeviceNotFoundError
+from app.repositories.settings import SystemSettingRepository
+from app.services.settings import thresholds_from_setting
 
 
 class Collector(Protocol):
@@ -48,6 +50,7 @@ class HealthCheckService:
         self._checks = HealthCheckRepository(session)
         self._cipher = cipher
         self._collector = collector
+        self._settings = SystemSettingRepository(session)
 
     def start(self, device_id: int) -> HealthCheck:
         device = self._devices.get(device_id)
@@ -72,20 +75,7 @@ class HealthCheckService:
             device = self._devices.get(health_check.device_id)
             if device is None:
                 raise DeviceNotFoundError
-            config = DeviceConfig(
-                name=device.name,
-                host=device.host,
-                port=device.port,
-                device_type=device.device_type,
-                username=device.username,
-                password=self._cipher.decrypt(device.encrypted_password),
-                secret=(
-                    self._cipher.decrypt(device.encrypted_secret)
-                    if device.encrypted_secret
-                    else None
-                ),
-                path_ping_target=device.path_ping_target,
-            )
+            config = self._device_config(device)
             report = self._collector.collect(config)
             self._apply_report(health_check, report, config)
             return self._checks.save(health_check)
@@ -98,6 +88,39 @@ class HealthCheckService:
             failed.finished_at = datetime.now(timezone.utc)
             failed.error = f"{type(error).__name__}: {error}"
             return self._checks.save(failed)
+
+    def test_connection(self, device_id: int) -> dict[str, object]:
+        device = self._devices.get(device_id)
+        if device is None:
+            raise DeviceNotFoundError
+        report = self._collector.collect(self._device_config(device))
+        return {
+            "device_id": device_id,
+            "reachable": report.ssh_ok,
+            "message": (
+                "SSH connection successful"
+                if report.ssh_ok
+                else report.error or "SSH connection failed"
+            ),
+        }
+
+    def _device_config(self, device) -> DeviceConfig:
+        setting = self._settings.get_or_create()
+        return DeviceConfig(
+            name=device.name,
+            host=device.host,
+            port=device.port,
+            device_type=device.device_type,
+            username=device.username,
+            password=self._cipher.decrypt(device.encrypted_password),
+            secret=(
+                self._cipher.decrypt(device.encrypted_secret)
+                if device.encrypted_secret
+                else None
+            ),
+            path_ping_target=device.path_ping_target,
+            thresholds=thresholds_from_setting(setting),
+        )
 
     def get(self, check_id: int) -> HealthCheck:
         health_check = self._checks.get(check_id)

@@ -17,6 +17,7 @@ dependencies = [
   "paramiko>=3.5.1,<4",
   "psycopg[binary]>=3.3,<4",
   "pydantic-settings>=2.15,<3",
+  "reportlab>=4.4,<5",
   "sqlalchemy>=2.0.54,<2.1",
   "uvicorn[standard]>=0.51,<1",
 ]

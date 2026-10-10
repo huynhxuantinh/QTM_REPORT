@@ -29,6 +29,8 @@ def test_base_migration_builds_devices_table(tmp_path: Path) -> None:
         "ping_results",
         "health_findings",
         "scan_runs",
+        "system_settings",
+        "users",
     }.issubset(inspector.get_table_names())
     assert "uq_devices_active_host_port" in {
         index["name"] for index in inspector.get_indexes("devices")

@@ -6,6 +6,8 @@ from app.db.models.health_check import (
     PingResult,
 )
 from app.db.models.scan_run import ScanRun
+from app.db.models.system_setting import SystemSetting
+from app.db.models.user import User
 
 __all__ = [
     "Device",
@@ -14,4 +16,6 @@ __all__ = [
     "InterfaceResult",
     "PingResult",
     "ScanRun",
+    "SystemSetting",
+    "User",
 ]

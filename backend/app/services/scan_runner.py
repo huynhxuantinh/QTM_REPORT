@@ -10,6 +10,7 @@ from app.db.session import SessionLocal
 from app.services.collectors.cisco_ios import CiscoIosCollector
 from app.services.health_checks import HealthCheckService
 from app.services.scan_runs import ScanRunService
+from app.repositories.settings import SystemSettingRepository
 
 
 logger = logging.getLogger(__name__)
@@ -31,8 +32,13 @@ class ThreadedScanRunner:
         try:
             with SessionLocal() as session:
                 check_ids = ScanRunService(session).check_ids(scan_id)
+                max_workers = (
+                    SystemSettingRepository(session)
+                    .get_or_create()
+                    .max_concurrent_checks
+                )
             with ThreadPoolExecutor(
-                max_workers=self._settings.max_concurrent_checks,
+                max_workers=max_workers,
                 thread_name_prefix=f"scan-{scan_id}",
             ) as executor:
                 list(executor.map(self._run_check, check_ids))

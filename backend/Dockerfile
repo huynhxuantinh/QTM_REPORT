@@ -7,7 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y iputils-ping=3:20221126-1+deb12u1 \
+    && apt-get install --no-install-recommends -y \
+        fonts-dejavu-core \
+        iputils-ping=3:20221126-1+deb12u1 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 app \
     && useradd --uid 10001 --gid app --create-home app
