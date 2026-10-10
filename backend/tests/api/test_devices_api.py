@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models.device import Device
+from app.api.dependencies import get_connection_tester
 
 
 DEVICE_PAYLOAD = {
@@ -95,4 +96,26 @@ def test_rejects_duplicate_active_device(client: TestClient) -> None:
 
     assert duplicate.status_code == 409
     assert duplicate.json()["detail"] == "An active device already uses this host and port"
+
+
+def test_device_connection_can_be_tested_without_persisting_check(
+    client: TestClient,
+) -> None:
+    device_id = client.post("/api/v1/devices", json=DEVICE_PAYLOAD).json()["id"]
+    client.app.dependency_overrides[get_connection_tester] = lambda: (
+        lambda requested_id: {
+            "device_id": requested_id,
+            "reachable": True,
+            "message": "SSH connection successful",
+        }
+    )
+
+    response = client.post(f"/api/v1/devices/{device_id}/test-connection")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "device_id": device_id,
+        "reachable": True,
+        "message": "SSH connection successful",
+    }
 
