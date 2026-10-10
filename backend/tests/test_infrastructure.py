@@ -46,6 +46,9 @@ def test_compose_defines_healthy_backend_and_postgres() -> None:
     assert compose["services"]["backend"]["depends_on"]["db"] == {
         "condition": "service_healthy"
     }
+    assert compose["services"]["backend"]["ports"] == [
+        "${BACKEND_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8001}:8000"
+    ]
     assert "postgresql+psycopg://" in compose["services"]["backend"][
         "environment"
     ]["DATABASE_URL"]
