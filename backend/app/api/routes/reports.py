@@ -50,8 +50,30 @@ def download_pdf(
     db: Annotated[Session, Depends(get_db)],
 ) -> Response:
     service = ReportService(db)
-    content = service.build_pdf(service.rows(**filters))
+    content = service.build_pdf(
+        service.rows(**filters),
+        date_from=filters.get("date_from"),
+        date_to=filters.get("date_to"),
+    )
     return _download(content, "application/pdf", "pdf")
+
+
+@router.get("/xlsx")
+def download_xlsx(
+    filters: FilterDependency,
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    service = ReportService(db)
+    content = service.build_xlsx(
+        service.rows(**filters),
+        date_from=filters.get("date_from"),
+        date_to=filters.get("date_to"),
+    )
+    return _download(
+        content,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "xlsx",
+    )
 
 
 def _download(content: bytes, media_type: str, extension: str) -> Response:

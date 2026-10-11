@@ -17,11 +17,18 @@ htmlcov/
 
 # Generated reports and logs
 backend/reports/
+output/
+tmp/
 *.log
+
+# Local agent tooling
+.agents/
 
 # Frontend dependencies/build output
 node_modules/
 dist/
+# Unused binary left by the original Vite starter.
+frontend/src/assets/hero.png
 
 # IDE and OS files
 .idea/

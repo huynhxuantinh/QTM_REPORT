@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from io import BytesIO
 
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models.health_check import (
@@ -82,16 +84,41 @@ def test_csv_and_pdf_reports_are_downloadable(
 
     csv_response = client.get("/api/v1/reports/csv")
     pdf_response = client.get("/api/v1/reports/pdf")
+    xlsx_response = client.get("/api/v1/reports/xlsx")
 
     assert csv_response.status_code == 200
     assert csv_response.headers["content-type"].startswith("text/csv")
     assert csv_response.content.startswith(b"\xef\xbb\xbf")
     assert b"'=R1" in csv_response.content
+    csv_text = csv_response.content.decode("utf-8-sig")
+    assert "Mã lần quét" in csv_text
+    assert "Thời gian kiểm tra (GMT+7)" in csv_text
+    assert "Cảnh báo" in csv_text
     assert "attachment" in csv_response.headers["content-disposition"]
 
     assert pdf_response.status_code == 200
     assert pdf_response.headers["content-type"] == "application/pdf"
     assert pdf_response.content.startswith(b"%PDF")
+    assert len(pdf_response.content) > 2_000
+
+    assert xlsx_response.status_code == 200
+    assert xlsx_response.headers["content-type"] == (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert xlsx_response.content.startswith(b"PK")
+    assert len(xlsx_response.content) > 5_000
+    workbook = load_workbook(BytesIO(xlsx_response.content), data_only=False)
+    assert workbook.sheetnames == [
+        "Tổng quan",
+        "Lịch sử kiểm tra",
+        "Cổng mạng",
+        "Cảnh báo",
+    ]
+    assert workbook["Tổng quan"]["A2"].value == (
+        "BÁO CÁO GIÁM SÁT SỨC KHỎE HỆ THỐNG MẠNG"
+    )
+    assert workbook["Lịch sử kiểm tra"]["A6"].value == 1
+    assert isinstance(workbook["Lịch sử kiểm tra"]["B6"].value, datetime)
 
 
 def test_reports_reject_reversed_date_range(client: TestClient) -> None:
