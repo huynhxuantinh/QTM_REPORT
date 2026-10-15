@@ -109,6 +109,34 @@ class CiscoIosCollectorTests(unittest.TestCase):
         self.assertFalse(report.ssh_ok)
         self.assertTrue(connection.disconnected)
 
+    def test_missing_path_ping_target_does_not_lower_health_status(self) -> None:
+        connection = FakeConnection()
+        config = DeviceConfig(
+            name="R1",
+            host="192.168.141.11",
+            username="admin",
+            password="qtm",
+            monitored_interfaces=("FastEthernet0/0",),
+            path_ping_target=None,
+        )
+        collector = CiscoIosCollector(
+            connector=lambda **_: connection,
+            management_ping=lambda *_: PingMetrics(
+                packet_loss_percent=0.0,
+                latency_min_ms=2.0,
+                latency_avg_ms=7.0,
+                latency_max_ms=14.0,
+            ),
+        )
+
+        report = collector.collect(config)
+
+        self.assertEqual(report.status, "Healthy")
+        self.assertIsNone(report.path_ping)
+        self.assertFalse(
+            any(item.metric == "path_ping" for item in report.findings)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

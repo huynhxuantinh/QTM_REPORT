@@ -107,6 +107,62 @@ class HealthEvaluatorTests(unittest.TestCase):
 
         self.assertEqual(result.status, "Critical")
 
+    def test_management_ping_below_configured_loss_threshold_is_healthy(
+        self,
+    ) -> None:
+        management_ping = PingMetrics(
+            packet_loss_percent=5.0,
+            latency_min_ms=1.0,
+            latency_avg_ms=18.0,
+            latency_max_ms=52.0,
+        )
+
+        result = evaluate_health(
+            ssh_ok=True,
+            cpu_percent=4.0,
+            ram_percent=21.0,
+            management_ping=management_ping,
+            path_ping=self.ping,
+            interfaces=[self.interface],
+        )
+
+        self.assertEqual(result.status, "Healthy")
+
+    def test_management_ping_at_critical_loss_threshold_is_critical(
+        self,
+    ) -> None:
+        management_ping = PingMetrics(
+            packet_loss_percent=30.0,
+            latency_min_ms=1.0,
+            latency_avg_ms=18.0,
+            latency_max_ms=52.0,
+        )
+
+        result = evaluate_health(
+            ssh_ok=True,
+            cpu_percent=4.0,
+            ram_percent=21.0,
+            management_ping=management_ping,
+            path_ping=self.ping,
+            interfaces=[self.interface],
+        )
+
+        self.assertEqual(result.status, "Critical")
+
+    def test_missing_optional_path_ping_does_not_create_warning(self) -> None:
+        result = evaluate_health(
+            ssh_ok=True,
+            cpu_percent=4.0,
+            ram_percent=21.0,
+            management_ping=self.ping,
+            path_ping=None,
+            path_ping_required=False,
+            interfaces=[self.interface],
+        )
+
+        self.assertEqual(result.status, "Healthy")
+        self.assertEqual(result.findings, [])
+
 
 if __name__ == "__main__":
     unittest.main()
