@@ -95,7 +95,9 @@ export const LoginPage: React.FC = () => {
       <div className="login-layout">
         <section className="login-hero" aria-labelledby="login-hero-title">
           <div className="login-brand">
-            <span className="login-brand-icon"><Activity size={24} /></span>
+            <span className="login-brand-icon" aria-hidden="true">
+              <img src="/network-health-logo.png" alt="" />
+            </span>
             <span>Network Health Check</span>
           </div>
 

@@ -13,6 +13,8 @@ import {
   AlertCircle,
   Menu,
   X,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { useRunAllChecks, useScanPolling } from '@/features/checks/hooks/useChecks';
 import { getErrorMessage, getExecutionStatusLabel } from '@/utils/i18n';
@@ -23,6 +25,9 @@ export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const [activeScanId, setActiveScanId] = useState<number | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+    () => window.localStorage.getItem('sidebar-collapsed') === 'true',
+  );
   const { success, info, error: notifyError } = useNotifications();
   const notifiedScanId = useRef<number | null>(null);
 
@@ -59,135 +64,147 @@ export const AppLayout: React.FC = () => {
     runAllMutation.isPending ||
     (scanData && (scanData.execution_status === 'running' || scanData.execution_status === 'queued'));
 
-  return (
-    <div className="d-flex flex-column min-vh-100 bg-light">
-      {/* Top Navigation Bar */}
-      <nav className="navbar navbar-expand-lg navbar-light app-navbar sticky-top px-3">
-        <div className="container-fluid">
-          <NavLink className="navbar-brand d-flex align-items-center gap-2 fw-bold text-dark me-4" to="/">
-            <div className="bg-primary p-1.5 rounded text-white d-flex align-items-center justify-content-center">
-              <Activity size={20} />
-            </div>
-            <span>Network Health Check</span>
-          </NavLink>
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
 
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    window.localStorage.setItem('sidebar-collapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
+  const navigationItems = [
+    { to: '/', label: 'Tổng quan', icon: Activity, end: true },
+    { to: '/devices', label: 'Thiết bị', icon: Server },
+    { to: '/reports', label: 'Báo cáo', icon: FileText },
+    { to: '/settings', label: 'Cấu hình', icon: SettingsIcon },
+  ];
+
+  return (
+    <div className="app-shell bg-light">
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          className="app-sidebar-backdrop"
+          aria-label="Đóng trình đơn điều hướng"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        id="main-navigation"
+        className={`app-sidebar ${isMobileMenuOpen ? 'is-open' : ''} ${isSidebarCollapsed ? 'is-collapsed' : ''}`}
+        aria-label="Điều hướng chính"
+      >
+        <div className="app-sidebar-header">
+          <NavLink className="app-sidebar-brand" to="/" onClick={() => setIsMobileMenuOpen(false)}>
+            <span className="app-brand-icon" aria-hidden="true">
+              <img className="app-brand-logo" src="/network-health-logo.png" alt="" />
+            </span>
+            <span className="app-sidebar-brand-copy">
+              <strong>Network Health</strong>
+              <small>Hệ thống giám sát mạng</small>
+            </span>
+          </NavLink>
           <button
-            className="navbar-toggler border-0"
             type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Mở hoặc đóng trình đơn điều hướng"
+            className="app-sidebar-toggle"
+            onClick={() => setIsSidebarCollapsed((collapsed) => !collapsed)}
+            aria-label={isSidebarCollapsed ? 'Mở rộng thanh menu' : 'Thu gọn thanh menu'}
+            title={isSidebarCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
           >
-            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            {isSidebarCollapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
+          </button>
+          <button
+            type="button"
+            className="app-sidebar-close"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Đóng trình đơn điều hướng"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        <nav className="app-sidebar-nav">
+          <p className="app-sidebar-label">ĐIỀU HƯỚNG</p>
+          <ul className="list-unstyled m-0 d-grid gap-1">
+            {navigationItems.map(({ to, label, icon: Icon, end }) => (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  end={end}
+                  className={({ isActive }) => `app-sidebar-link ${isActive ? 'active' : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  title={isSidebarCollapsed ? label : undefined}
+                >
+                  <Icon size={19} aria-hidden="true" />
+                  <span className="app-nav-label">{label}</span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="app-sidebar-footer">
+          <button
+            className={`btn app-scan-button ${isScanning ? 'btn-warning text-dark' : 'btn-primary'}`}
+            onClick={handleRunAll}
+            disabled={isScanning}
+            title="Quét toàn bộ router trong mạng"
+          >
+            {isScanning ? (
+              <>
+                <Loader2 size={17} className="animate-spin" aria-hidden="true" />
+                <span className="app-scan-label">Đang quét ({scanData?.completed_checks || 0}/{scanData?.total_checks || '...'})</span>
+              </>
+            ) : (
+              <>
+                <PlayCircle size={18} aria-hidden="true" />
+                <span className="app-scan-label">Quét tất cả thiết bị</span>
+              </>
+            )}
           </button>
 
-          <div className={`app-navbar-collapse navbar-collapse ${isMobileMenuOpen ? 'show' : ''}`}>
-            <ul className="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
-              <li className="nav-item">
-                <NavLink
-                  to="/"
-                  end
-                  className={({ isActive }) =>
-                    `nav-link d-flex align-items-center gap-1.5 px-3 rounded ${
-                      isActive ? 'active bg-primary text-white fw-semibold shadow-sm' : 'text-secondary'
-                    }`
-                  }
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Activity size={16} />
-                  <span>Tổng quan</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="/devices"
-                  className={({ isActive }) =>
-                    `nav-link d-flex align-items-center gap-1.5 px-3 rounded ${
-                      isActive ? 'active bg-primary text-white fw-semibold shadow-sm' : 'text-secondary'
-                    }`
-                  }
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Server size={16} />
-                  <span>Thiết bị</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="/reports"
-                  className={({ isActive }) =>
-                    `nav-link d-flex align-items-center gap-1.5 px-3 rounded ${
-                      isActive ? 'active bg-primary text-white fw-semibold shadow-sm' : 'text-secondary'
-                    }`
-                  }
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <FileText size={16} />
-                  <span>Báo cáo</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="/settings"
-                  className={({ isActive }) =>
-                    `nav-link d-flex align-items-center gap-1.5 px-3 rounded ${
-                      isActive ? 'active bg-primary text-white fw-semibold shadow-sm' : 'text-secondary'
-                    }`
-                  }
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <SettingsIcon size={16} />
-                  <span>Cấu hình</span>
-                </NavLink>
-              </li>
-            </ul>
-
-            <div className="d-flex align-items-center gap-3">
-              <button
-                className={`btn btn-sm d-flex align-items-center gap-1.5 ${
-                  isScanning ? 'btn-warning text-dark' : 'btn-outline-primary bg-white'
-                }`}
-                onClick={handleRunAll}
-                disabled={isScanning}
-                title="Quét toàn bộ router trong mạng"
-              >
-                {isScanning ? (
-                  <>
-                    <Loader2 size={16} className="spinner-border-sm animate-spin" />
-                    <span>Đang quét ({scanData?.completed_checks || 0}/{scanData?.total_checks || '...'})</span>
-                  </>
-                ) : (
-                  <>
-                    <PlayCircle size={16} />
-                    <span>Quét tất cả</span>
-                  </>
-                )}
-              </button>
-
-              <div className="dropdown">
-                <button
-                  className="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 text-dark"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  id="userDropdown"
-                >
-                  <span className="badge bg-secondary rounded-circle px-1.5 py-1">
-                    {username?.charAt(0).toUpperCase() || 'A'}
-                  </span>
-                  <span className="text-dark small">{username || 'Quản trị viên'}</span>
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
-                  <li>
-                    <button className="dropdown-item text-danger d-flex align-items-center gap-2" onClick={handleLogout}>
-                      <LogOut size={16} />
-                      <span>Đăng xuất</span>
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
+          <div className="app-user-card">
+            <span className="app-user-avatar" aria-hidden="true">
+              {username?.charAt(0).toUpperCase() || 'A'}
+            </span>
+            <span className="app-user-info">
+              <strong>{username || 'Quản trị viên'}</strong>
+              <small>Quản trị hệ thống</small>
+            </span>
+            <button type="button" className="app-logout-button" onClick={handleLogout} aria-label="Đăng xuất" title="Đăng xuất">
+              <LogOut size={18} />
+            </button>
           </div>
         </div>
-      </nav>
+      </aside>
+
+      <div className="app-workspace">
+        <header className="app-mobile-header">
+          <NavLink className="app-mobile-brand" to="/">
+            <span className="app-brand-icon" aria-hidden="true">
+              <img className="app-brand-logo" src="/network-health-logo.png" alt="" />
+            </span>
+            <strong>Network Health</strong>
+          </NavLink>
+          <button
+            className="app-mobile-menu-button"
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Mở trình đơn điều hướng"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="main-navigation"
+          >
+            <Menu size={22} />
+          </button>
+        </header>
 
       {/* Real-time Scan Progress Banner */}
       {activeScanId && scanData && (
@@ -238,6 +255,7 @@ export const AppLayout: React.FC = () => {
           Hệ thống kiểm tra sức khỏe mạng — Cisco IOS, GNS3 và Netmiko
         </div>
       </footer>
+      </div>
     </div>
   );
 };

@@ -19,35 +19,30 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     Healthy: {
       badgeClass: 'bg-success-subtle text-success border border-success-subtle',
       dotClass: 'bg-success',
-      pingClass: 'bg-success',
       label: 'Tốt',
       icon: CheckCircle2,
     },
     Warning: {
       badgeClass: 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
       dotClass: 'bg-warning',
-      pingClass: 'bg-warning',
       label: 'Cảnh báo',
       icon: AlertTriangle,
     },
     Critical: {
       badgeClass: 'bg-danger-subtle text-danger border border-danger-subtle',
       dotClass: 'bg-danger',
-      pingClass: 'bg-danger',
       label: 'Nghiêm trọng',
       icon: XCircle,
     },
     Unknown: {
       badgeClass: 'bg-secondary-subtle text-secondary border border-secondary-subtle',
       dotClass: 'bg-secondary',
-      pingClass: 'bg-secondary',
       label: 'Chưa xác định',
       icon: HelpCircle,
     },
   }[normalized] || {
     badgeClass: 'bg-secondary-subtle text-secondary border border-secondary-subtle',
     dotClass: 'bg-secondary',
-    pingClass: 'bg-secondary',
     label: 'Chưa xác định',
     icon: HelpCircle,
   };
@@ -70,14 +65,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     <span
       className={`d-inline-flex align-items-center rounded-pill ${config.badgeClass} ${sizeClasses}`}
     >
-      <span className="position-relative d-flex status-dot">
-        {normalized !== 'Unknown' && (
-          <span
-            className={`status-dot-ping position-absolute d-inline-flex rounded-circle opacity-75 ${config.pingClass}`}
-          />
-        )}
-        <span className={`position-relative d-inline-flex rounded-circle status-dot ${config.dotClass}`} />
-      </span>
+      <span className={`d-inline-flex rounded-circle status-dot ${config.dotClass}`} />
       {showIcon && <IconComponent size={iconSizes} strokeWidth={2.5} />}
       <span>{config.label}</span>
     </span>
