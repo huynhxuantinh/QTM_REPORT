@@ -131,6 +131,7 @@ class CiscoIosCollector:
                 management_ping=management_ping,
                 path_ping=path_ping,
                 interfaces=interfaces,
+                path_ping_required=config.path_ping_target is not None,
                 thresholds=config.thresholds,
             )
             return NetworkHealthReport(

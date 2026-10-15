@@ -62,6 +62,9 @@ Khi bấm **Quét tất cả thiết bị**, hệ thống xử lý theo thứ t�
 
 6. Bộ đánh giá so sánh CPU, RAM, packet loss và latency với ngưỡng cấu hình;
    đồng thời kiểm tra SSH, trạng thái cổng và bộ đếm lỗi.
+   Ping quản trị và ping đường truyền dùng chung ngưỡng packet loss. Nếu thiết
+   bị không khai báo đích ping đường truyền thì phép đo này được bỏ qua, không
+   tạo cảnh báo thiếu dữ liệu.
 7. Mức nghiêm trọng nhất trong các phát hiện trở thành trạng thái tổng hợp:
    `Healthy < Warning < Critical`.
 8. Kết quả được lưu vào PostgreSQL gồm thông số chính, interface, kết quả ping,
@@ -72,6 +75,13 @@ Khi bấm **Quét tất cả thiết bị**, hệ thống xử lý theo thứ t�
 > `execution_status` cho biết tác vụ đang chạy, thành công hay lỗi kỹ thuật;
 > `overall_status` cho biết sức khỏe của router. Vì vậy một lần quét có thể chạy
 > thành công nhưng router vẫn có trạng thái `Critical`, ví dụ khi SSH thất bại.
+
+### Hạn chế đã biết
+
+Bộ đếm input error, CRC, output error và output drop của interface Cisco là số
+tích lũy từ lúc router khởi động. Hệ thống hiện cảnh báo khi bộ đếm khác 0, nên
+một lỗi cũ có thể tiếp tục tạo cảnh báo cho đến khi router được reload hoặc bộ
+đếm được xóa. Phiên bản hiện tại chưa tính phần chênh lệch giữa hai lần quét.
 
 ### Quét thủ công, quét tự động và báo cáo
 

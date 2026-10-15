@@ -20,6 +20,7 @@ def evaluate_health(
     management_ping: PingMetrics | None,
     path_ping: PingMetrics | None,
     interfaces: list[InterfaceMetrics],
+    path_ping_required: bool = True,
     thresholds: HealthThresholds | Mapping[str, float] | None = None,
 ) -> HealthEvaluation:
     findings: list[HealthFinding] = []
@@ -55,32 +56,28 @@ def evaluate_health(
 
     if management_ping is None:
         add("Warning", "management_ping", "Management ping data is unavailable")
-    elif management_ping.packet_loss_percent > 0:
-        add(
-            "Warning",
-            "management_ping",
-            f"Management packet loss is {management_ping.packet_loss_percent:g}%",
+    else:
+        _evaluate_packet_loss(
+            ping=management_ping,
+            metric="management_ping",
+            label="Management",
+            warning_at=threshold("packet_loss_warning_percent"),
+            critical_at=threshold("packet_loss_critical_percent"),
+            add=add,
         )
 
     if path_ping is None:
-        add("Warning", "path_ping", "Path ping data is unavailable")
+        if path_ping_required:
+            add("Warning", "path_ping", "Path ping data is unavailable")
     else:
-        if path_ping.packet_loss_percent >= threshold(
-            "packet_loss_critical_percent"
-        ):
-            add(
-                "Critical",
-                "packet_loss",
-                f"Path packet loss is {path_ping.packet_loss_percent:g}%",
-            )
-        elif path_ping.packet_loss_percent >= threshold(
-            "packet_loss_warning_percent"
-        ):
-            add(
-                "Warning",
-                "packet_loss",
-                f"Path packet loss is {path_ping.packet_loss_percent:g}%",
-            )
+        _evaluate_packet_loss(
+            ping=path_ping,
+            metric="packet_loss",
+            label="Path",
+            warning_at=threshold("packet_loss_warning_percent"),
+            critical_at=threshold("packet_loss_critical_percent"),
+            add=add,
+        )
 
         latency = path_ping.latency_avg_ms
         if latency is None:
@@ -129,6 +126,22 @@ def _evaluate_percentage(
         add("Critical", metric.lower(), f"{metric} usage is {value:g}%")
     elif value >= warning_at:
         add("Warning", metric.lower(), f"{metric} usage is {value:g}%")
+
+
+def _evaluate_packet_loss(
+    *,
+    ping: PingMetrics,
+    metric: str,
+    label: str,
+    warning_at: float,
+    critical_at: float,
+    add: Callable[[HealthStatus, str, str], None],
+) -> None:
+    loss = ping.packet_loss_percent
+    if loss >= critical_at:
+        add("Critical", metric, f"{label} packet loss is {loss:g}%")
+    elif loss >= warning_at:
+        add("Warning", metric, f"{label} packet loss is {loss:g}%")
 
 
 def _worst_status(statuses: Iterable[HealthStatus]) -> HealthStatus:
