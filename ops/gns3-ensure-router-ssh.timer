@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodically repair SSH on running GNS3 routers
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Unit=gns3-ensure-router-ssh.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=GNS3 R4 ICMP packet-loss demonstration
+Requires=gns3-management-network.service
+After=gns3-management-network.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/gns3-r4-demo-loss on
+ExecStop=/usr/local/sbin/gns3-r4-demo-loss off
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

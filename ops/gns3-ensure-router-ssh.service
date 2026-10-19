@@ -1,0 +1,7 @@
+[Unit]
+Description=Ensure SSH is enabled on GNS3 Cisco routers
+After=gns3-management-network.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/gns3-ensure-router-ssh

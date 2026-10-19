@@ -1,0 +1,12 @@
+[Unit]
+Description=GNS3 isolated management network
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/gns3-management-network
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
