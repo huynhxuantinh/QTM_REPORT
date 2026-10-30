@@ -23,6 +23,10 @@ from app.services.auth import ensure_admin_account
 from app.repositories.settings import SystemSettingRepository
 from app.services.scheduler import build_scheduler
 from app.services.startup_recovery import recover_interrupted_work
+from app.services.retention import (
+    HistoryRetentionScheduler,
+    HistoryRetentionService,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -39,6 +43,7 @@ def create_app(
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         scheduler = None
+        retention_scheduler = None
         with resolved_session_factory() as session:
             recovered_scans, recovered_checks = recover_interrupted_work(
                 session
@@ -71,9 +76,29 @@ def create_app(
             scheduler = build_scheduler(scheduler_settings)
             scheduler.start()
             application.state.scheduler = scheduler
+        if resolved_settings.data_retention_enabled:
+            def cleanup_history() -> None:
+                with resolved_session_factory() as session:
+                    result = HistoryRetentionService(session).prune(
+                        retention_days=resolved_settings.data_retention_days
+                    )
+                if result.deleted_checks or result.deleted_scans:
+                    logger.info(
+                        "Pruned expired monitoring history",
+                        extra={
+                            "deleted_checks": result.deleted_checks,
+                            "deleted_scans": result.deleted_scans,
+                        },
+                    )
+
+            retention_scheduler = HistoryRetentionScheduler(cleanup_history)
+            retention_scheduler.start()
+            application.state.retention_scheduler = retention_scheduler
         yield
         if scheduler is not None:
             scheduler.shutdown(wait=False)
+        if retention_scheduler is not None:
+            retention_scheduler.shutdown(wait=False)
 
     application = FastAPI(
         title=resolved_settings.app_name,

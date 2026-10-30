@@ -87,14 +87,17 @@ một lỗi cũ có thể tiếp tục tạo cảnh báo cho đến khi router �
 
 - **Kiểm tra ngay:** chỉ quét router đang xem và lưu một bản ghi lịch sử mới.
 - **Quét tất cả:** kiểm tra song song toàn bộ thiết bị đang kích hoạt.
-- **Quét tự động:** APScheduler gọi cùng luồng quét theo chu kỳ cấu hình khi
-  `SCHEDULER_ENABLED=true`.
+- **Quét tự động:** chạy tuần tự `quét xong → nghỉ → quét tiếp` khi
+  `SCHEDULER_ENABLED=true`; thời gian nghỉ lấy từ cấu hình cooldown.
 - **Dashboard:** lấy lần kiểm tra gần nhất của từng thiết bị để tính số lượng
   Tốt, Cảnh báo và Nghiêm trọng.
 - **Chi tiết thiết bị:** hiển thị biểu đồ xu hướng, interface, ping, cảnh báo và
   lịch sử các lần kiểm tra.
 - **Báo cáo:** truy vấn dữ liệu đã lưu theo thời gian/trạng thái rồi xuất Excel
-  hoặc PDF; việc xuất báo cáo không cần kết nối lại router.
+  hoặc PDF; việc xuất báo cáo không cần kết nối lại router. Báo cáo được giới
+  hạn 10.000 lần kiểm tra; nếu vượt giới hạn, hãy lọc thời gian hoặc thiết bị.
+- **Lưu trữ:** job nền chạy mỗi ngày, mặc định xóa lịch sử đã hoàn thành cũ hơn
+  30 ngày. Điều chỉnh bằng `DATA_RETENTION_DAYS` trong `.env`.
 
 ### Khi router mất kết nối
 

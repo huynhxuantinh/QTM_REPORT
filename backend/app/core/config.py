@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     scheduler_interval_minutes: int = Field(default=15, ge=1)
     scheduler_cooldown_seconds: int = Field(default=5, ge=1, le=300)
     max_concurrent_checks: int = Field(default=3, ge=1, le=10)
+    data_retention_enabled: bool = True
+    data_retention_days: int = Field(default=30, ge=1, le=3650)
     auth_enabled: bool = False
     jwt_secret: str = "development-only-change-me"
     access_token_minutes: int = Field(default=480, ge=5, le=1440)

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from statistics import fmean
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db.models.device import Device
@@ -16,6 +16,13 @@ from app.db.models.health_check import HealthCheck
 
 
 VIETNAM_TZ = timezone(timedelta(hours=7))
+
+
+class ReportTooLargeError(Exception):
+    def __init__(self, count: int, limit: int) -> None:
+        self.count = count
+        self.limit = limit
+        super().__init__(f"Report has {count} checks; limit is {limit}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +98,8 @@ class ReportRow:
 
 
 class ReportService:
+    MAX_CHECKS = 10_000
+
     def __init__(self, session: Session) -> None:
         self._session = session
 
@@ -117,6 +126,18 @@ class ReportService:
             filters.append(Device.site == site)
         if status is not None:
             filters.append(HealthCheck.overall_status == status)
+
+        check_count = int(
+            self._session.scalar(
+                select(func.count(HealthCheck.id))
+                .select_from(Device)
+                .join(HealthCheck, HealthCheck.device_id == Device.id)
+                .where(*filters)
+            )
+            or 0
+        )
+        if check_count > self.MAX_CHECKS:
+            raise ReportTooLargeError(check_count, self.MAX_CHECKS)
 
         records = self._session.execute(
             select(Device, HealthCheck)

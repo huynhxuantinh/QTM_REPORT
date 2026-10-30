@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.services.reports import ReportService
+from app.services.reports import ReportService, ReportTooLargeError
 
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -40,7 +40,7 @@ def download_csv(
     db: Annotated[Session, Depends(get_db)],
 ) -> Response:
     service = ReportService(db)
-    content = service.build_csv(service.rows(**filters))
+    content = service.build_csv(_report_rows(service, filters))
     return _download(content, "text/csv; charset=utf-8", "csv")
 
 
@@ -51,7 +51,7 @@ def download_pdf(
 ) -> Response:
     service = ReportService(db)
     content = service.build_pdf(
-        service.rows(**filters),
+        _report_rows(service, filters),
         date_from=filters.get("date_from"),
         date_to=filters.get("date_to"),
     )
@@ -65,7 +65,7 @@ def download_xlsx(
 ) -> Response:
     service = ReportService(db)
     content = service.build_xlsx(
-        service.rows(**filters),
+        _report_rows(service, filters),
         date_from=filters.get("date_from"),
         date_to=filters.get("date_to"),
     )
@@ -76,6 +76,21 @@ def download_xlsx(
     )
 
 
+def _report_rows(
+    service: ReportService,
+    filters: dict[str, object],
+):
+    try:
+        return service.rows(**filters)
+    except ReportTooLargeError as error:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"Báo cáo có {error.count} lần kiểm tra, vượt giới hạn "
+                f"{error.limit}; hãy thu hẹp khoảng thời gian hoặc chọn "
+                "một thiết bị."
+            ),
+        ) from error
 def _download(content: bytes, media_type: str, extension: str) -> Response:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     return Response(

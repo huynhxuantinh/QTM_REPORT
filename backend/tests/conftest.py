@@ -29,6 +29,7 @@ def settings() -> Settings:
         credential_key=Fernet.generate_key().decode("ascii"),
         lab_cidrs="192.168.141.0/24,192.168.91.0/24",
         cors_origins="http://localhost:3000",
+        data_retention_enabled=False,
     )
 
 
