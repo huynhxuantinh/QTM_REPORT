@@ -10,7 +10,6 @@ from app.services.scan_runs import ScanRunService
 
 
 def test_startup_recovers_interrupted_scan_and_standalone_check(
-    monkeypatch,
     session_factory: sessionmaker[Session],
     settings,
 ) -> None:
@@ -44,11 +43,11 @@ def test_startup_recovers_interrupted_scan_and_standalone_check(
         standalone_check_id = standalone.id
         interrupted_scan_id = interrupted_scan.id
 
-    monkeypatch.setattr("app.main.SessionLocal", session_factory)
     application = create_app(
         settings.model_copy(
             update={"scheduler_enabled": False, "auth_enabled": False}
-        )
+        ),
+        session_factory=session_factory,
     )
     with TestClient(application):
         pass

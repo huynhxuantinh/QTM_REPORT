@@ -14,6 +14,7 @@ venv/
 .ruff_cache/
 .coverage
 htmlcov/
+network_health.db
 
 # Generated reports and logs
 backend/reports/
@@ -23,6 +24,7 @@ tmp/
 
 # Local agent tooling
 .agents/
+.codex-*.tar
 
 # Frontend dependencies/build output
 node_modules/

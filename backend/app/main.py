@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.dependencies import get_settings, require_admin
 from app.api.routes import (
@@ -20,19 +22,40 @@ from app.db.session import SessionLocal
 from app.services.auth import ensure_admin_account
 from app.repositories.settings import SystemSettingRepository
 from app.services.scheduler import build_scheduler
+from app.services.startup_recovery import recover_interrupted_work
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+logger = logging.getLogger(__name__)
+
+
+def create_app(
+    settings: Settings | None = None,
+    *,
+    session_factory: sessionmaker[Session] | None = None,
+) -> FastAPI:
     """Create the FastAPI application and register versioned routes."""
     resolved_settings = settings or get_settings()
+    resolved_session_factory = session_factory or SessionLocal
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         scheduler = None
+        with resolved_session_factory() as session:
+            recovered_scans, recovered_checks = recover_interrupted_work(
+                session
+            )
+        if recovered_scans or recovered_checks:
+            logger.warning(
+                "Recovered interrupted work after backend restart",
+                extra={
+                    "recovered_scans": recovered_scans,
+                    "recovered_checks": recovered_checks,
+                },
+            )
         if resolved_settings.auth_enabled:
-            with SessionLocal() as session:
+            with resolved_session_factory() as session:
                 ensure_admin_account(session, resolved_settings)
         if resolved_settings.scheduler_enabled:
-            with SessionLocal() as session:
+            with resolved_session_factory() as session:
                 stored = SystemSettingRepository(session).get_or_create()
             scheduler_settings = resolved_settings.model_copy(
                 update={

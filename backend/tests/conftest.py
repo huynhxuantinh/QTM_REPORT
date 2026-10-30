@@ -53,7 +53,7 @@ def client(
     session_factory: sessionmaker[Session],
     settings: Settings,
 ) -> Generator[TestClient, None, None]:
-    app = create_app(settings)
+    app = create_app(settings, session_factory=session_factory)
 
     def override_db() -> Generator[Session, None, None]:
         with session_factory() as session:
