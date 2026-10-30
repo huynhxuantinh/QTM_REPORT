@@ -13,7 +13,7 @@ from app.db.models.health_check import (
     PingResult,
 )
 from app.db.models.scan_run import ScanRun
-from app.services.retention import HistoryRetentionService
+from app.services.retention import HistoryRetentionService, run_retention_loop
 
 
 def test_retention_prunes_only_completed_history_older_than_cutoff(
@@ -96,4 +96,32 @@ def test_retention_prunes_only_completed_history_older_than_cutoff(
         assert session.scalar(select(func.count()).select_from(PingResult)) == 0
         assert session.scalar(select(func.count()).select_from(HealthFindingResult)) == 0
         assert session.get(HealthCheck, running_check.id) is not None
+
+
+def test_daily_retention_loop_survives_one_cleanup_failure() -> None:
+    from threading import Event
+
+    stopped = Event()
+    attempts = 0
+    waits: list[float] = []
+
+    def cleanup_once() -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("database unavailable")
+        stopped.set()
+
+    def wait(seconds: float) -> bool:
+        waits.append(seconds)
+        return stopped.is_set()
+
+    run_retention_loop(
+        stopped=stopped,
+        cleanup_once=cleanup_once,
+        wait=wait,
+    )
+
+    assert attempts == 2
+    assert waits == [86_400.0, 86_400.0]
 
