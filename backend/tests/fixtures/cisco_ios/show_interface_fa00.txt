@@ -1,5 +1,7 @@
 FastEthernet0/0 is up, line protocol is up
   Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 0
+  1250 packets input, 985000 bytes, 0 no buffer
      0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored
+  830 packets output, 712400 bytes, 0 underruns
      0 output errors, 0 collisions, 0 interface resets
 

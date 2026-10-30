@@ -66,6 +66,10 @@ class CiscoIosParserTests(unittest.TestCase):
             fixture("show_interface_fa00.txt")
         )
 
+        self.assertEqual(counters.input_packets, 1_250)
+        self.assertEqual(counters.input_bytes, 985_000)
+        self.assertEqual(counters.output_packets, 830)
+        self.assertEqual(counters.output_bytes, 712_400)
         self.assertEqual(counters.input_errors, 0)
         self.assertEqual(counters.crc_errors, 0)
         self.assertEqual(counters.output_errors, 0)

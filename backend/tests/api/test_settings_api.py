@@ -12,18 +12,21 @@ def test_settings_can_be_read_and_updated(client: TestClient) -> None:
     assert current.status_code == 200
     assert current.json()["cpu_warning_percent"] == 70.0
     assert current.json()["scheduler_interval_minutes"] == 15
+    assert current.json()["scheduler_cooldown_seconds"] == 5
 
     payload = {
         **current.json(),
         "cpu_warning_percent": 50.0,
         "cpu_critical_percent": 80.0,
         "scheduler_interval_minutes": 10,
+        "scheduler_cooldown_seconds": 2,
         "max_concurrent_checks": 4,
     }
     updated = client.put("/api/v1/settings", json=payload)
 
     assert updated.status_code == 200
     assert updated.json()["cpu_warning_percent"] == 50.0
+    assert updated.json()["scheduler_cooldown_seconds"] == 2
     assert client.get("/api/v1/settings").json() == updated.json()
 
 
