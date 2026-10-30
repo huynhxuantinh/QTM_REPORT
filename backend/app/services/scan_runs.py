@@ -73,6 +73,24 @@ class ScanRunService:
 
     def fail(self, scan_id: int) -> ScanRun:
         scan = self.get(scan_id)
+        self._session.expire_all()
+        scan = self.get(scan_id)
+        failed_at = datetime.now(timezone.utc)
+        for check in scan.checks:
+            if check.execution_status != "running":
+                continue
+            check.execution_status = "failed"
+            check.finished_at = failed_at
+            check.checked_at = failed_at
+            check.error = "Scan runner stopped before completion"
+
+        scan.completed_checks = sum(
+            check.execution_status in {"succeeded", "failed"}
+            for check in scan.checks
+        )
+        scan.failed_checks = sum(
+            check.execution_status == "failed" for check in scan.checks
+        )
         scan.execution_status = "failed"
-        scan.finished_at = datetime.now(timezone.utc)
+        scan.finished_at = failed_at
         return self._scans.save(scan)
