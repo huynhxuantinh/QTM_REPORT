@@ -12,6 +12,7 @@ from app.services.scan_runs import ScanAlreadyRunningError, ScanRunService
 
 
 logger = logging.getLogger(__name__)
+DEFAULT_COOLDOWN_SECONDS = 5.0
 
 
 def run_scheduled_scan(settings: Settings) -> None:
@@ -37,7 +38,14 @@ def run_continuous_scan_loop(
             scan_once()
         except Exception:
             logger.exception("Continuous network scan failed")
-        delay = max(1.0, float(cooldown_seconds()))
+        try:
+            delay = max(1.0, float(cooldown_seconds()))
+        except Exception:
+            logger.exception(
+                "Could not load scheduler cooldown; using fallback",
+                extra={"fallback_seconds": DEFAULT_COOLDOWN_SECONDS},
+            )
+            delay = DEFAULT_COOLDOWN_SECONDS
         if wait(delay):
             break
 
