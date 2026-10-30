@@ -12,6 +12,7 @@ from app.db.models.health_check import (
     HealthFindingResult,
     PingResult,
 )
+from app.services.reports import ReportService
 from tests.api.test_devices_api import DEVICE_PAYLOAD
 
 
@@ -131,4 +132,31 @@ def test_reports_reject_reversed_date_range(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_reports_reject_unbounded_result_that_would_exhaust_memory(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+    monkeypatch,
+) -> None:
+    device_id = _seed_check(client, session_factory)
+    now = datetime.now(timezone.utc)
+    with session_factory() as session:
+        session.add(
+            HealthCheck(
+                device_id=device_id,
+                execution_status="succeeded",
+                overall_status="Healthy",
+                started_at=now,
+                finished_at=now,
+                checked_at=now,
+            )
+        )
+        session.commit()
+    monkeypatch.setattr(ReportService, "MAX_CHECKS", 1, raising=False)
+
+    response = client.get("/api/v1/reports/csv")
+
+    assert response.status_code == 413
+    assert "thu hẹp khoảng thời gian" in response.json()["detail"]
 
