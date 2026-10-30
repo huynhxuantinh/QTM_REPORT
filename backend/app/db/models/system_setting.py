@@ -19,4 +19,5 @@ class SystemSetting(Base):
     latency_warning_ms: Mapped[float] = mapped_column(Float, default=50.0)
     latency_critical_ms: Mapped[float] = mapped_column(Float, default=150.0)
     scheduler_interval_minutes: Mapped[int] = mapped_column(Integer, default=15)
+    scheduler_cooldown_seconds: Mapped[int] = mapped_column(Integer, default=5)
     max_concurrent_checks: Mapped[int] = mapped_column(Integer, default=3)

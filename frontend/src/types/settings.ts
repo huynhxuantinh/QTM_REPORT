@@ -8,5 +8,6 @@ export interface SystemSettings {
   latency_warning_ms: number;
   latency_critical_ms: number;
   scheduler_interval_minutes: number;
+  scheduler_cooldown_seconds: number;
   max_concurrent_checks: number;
 }

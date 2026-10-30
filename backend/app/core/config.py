@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     scheduler_enabled: bool = False
     scheduler_interval_minutes: int = Field(default=15, ge=1)
+    scheduler_cooldown_seconds: int = Field(default=5, ge=1, le=300)
     max_concurrent_checks: int = Field(default=3, ge=1, le=10)
     auth_enabled: bool = False
     jwt_secret: str = "development-only-change-me"

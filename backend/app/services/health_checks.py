@@ -77,7 +77,11 @@ class HealthCheckService:
                 raise DeviceNotFoundError
             config = self._device_config(device)
             report = self._collector.collect(config)
-            self._apply_report(health_check, report, config)
+            previous = self._checks.latest_succeeded(
+                device.id,
+                before_check_id=health_check.id,
+            )
+            self._apply_report(health_check, report, config, previous)
             return self._checks.save(health_check)
         except Exception as error:
             self._checks.rollback()
@@ -146,6 +150,7 @@ class HealthCheckService:
         health_check: HealthCheck,
         report: NetworkHealthReport,
         config: DeviceConfig,
+        previous: HealthCheck | None,
     ) -> None:
         health_check.execution_status = "succeeded"
         health_check.overall_status = report.status
@@ -162,19 +167,53 @@ class HealthCheckService:
             health_check.memory_used_bytes = report.memory.used_bytes
             health_check.memory_free_bytes = report.memory.free_bytes
 
-        health_check.interfaces = [
-            InterfaceResult(
-                name=item.name,
-                ip_address=item.ip_address,
-                status=item.status,
-                protocol=item.protocol,
-                input_errors=item.input_errors,
-                crc_errors=item.crc_errors,
-                output_errors=item.output_errors,
-                output_drops=item.output_drops,
+        previous_interfaces = {
+            item.name: item for item in previous.interfaces
+        } if previous is not None else {}
+        elapsed_seconds = (
+            (report.checked_at - previous.checked_at).total_seconds()
+            if previous is not None and previous.checked_at is not None
+            else None
+        )
+        health_check.interfaces = []
+        for item in report.interfaces:
+            old = previous_interfaces.get(item.name)
+            health_check.interfaces.append(
+                InterfaceResult(
+                    name=item.name,
+                    ip_address=item.ip_address,
+                    status=item.status,
+                    protocol=item.protocol,
+                    input_packets=item.input_packets,
+                    output_packets=item.output_packets,
+                    input_bytes=item.input_bytes,
+                    output_bytes=item.output_bytes,
+                    input_packets_per_second=HealthCheckService._counter_rate(
+                        item.input_packets,
+                        old.input_packets if old is not None else None,
+                        elapsed_seconds,
+                    ),
+                    output_packets_per_second=HealthCheckService._counter_rate(
+                        item.output_packets,
+                        old.output_packets if old is not None else None,
+                        elapsed_seconds,
+                    ),
+                    input_bytes_per_second=HealthCheckService._counter_rate(
+                        item.input_bytes,
+                        old.input_bytes if old is not None else None,
+                        elapsed_seconds,
+                    ),
+                    output_bytes_per_second=HealthCheckService._counter_rate(
+                        item.output_bytes,
+                        old.output_bytes if old is not None else None,
+                        elapsed_seconds,
+                    ),
+                    input_errors=item.input_errors,
+                    crc_errors=item.crc_errors,
+                    output_errors=item.output_errors,
+                    output_drops=item.output_drops,
+                )
             )
-            for item in report.interfaces
-        ]
 
         pings: list[PingResult] = []
         if report.management_ping is not None:
@@ -198,6 +237,21 @@ class HealthCheckService:
             )
             for item in report.findings
         ]
+
+    @staticmethod
+    def _counter_rate(
+        current: int,
+        previous: int | None,
+        elapsed_seconds: float | None,
+    ) -> float | None:
+        if (
+            previous is None
+            or elapsed_seconds is None
+            or elapsed_seconds <= 0
+            or current < previous
+        ):
+            return None
+        return (current - previous) / elapsed_seconds
 
     @staticmethod
     def _ping_result(source_type: str, target: str, metrics) -> PingResult:

@@ -18,9 +18,11 @@ def test_continuous_loop_finishes_each_scan_before_starting_next() -> None:
     stopped = Event()
     events: list[str] = []
     cooldowns: list[float] = []
+    cycle = 0
 
     def scan_once() -> None:
-        cycle = events.count("end") + 1
+        nonlocal cycle
+        cycle += 1
         events.extend([f"start-{cycle}", f"end-{cycle}"])
         if cycle == 3:
             stopped.set()

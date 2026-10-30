@@ -86,6 +86,10 @@ def parse_interface_counters(output: str) -> InterfaceCounters:
         return int(match.group(1)) if match else 0
 
     return InterfaceCounters(
+        input_packets=counter(r"(\d+)\s+packets input"),
+        input_bytes=counter(r"\d+\s+packets input,\s*(\d+)\s+bytes"),
+        output_packets=counter(r"(\d+)\s+packets output"),
+        output_bytes=counter(r"\d+\s+packets output,\s*(\d+)\s+bytes"),
         input_errors=counter(r"(\d+)\s+input errors"),
         crc_errors=counter(r"(\d+)\s+CRC"),
         output_errors=counter(r"(\d+)\s+output errors"),

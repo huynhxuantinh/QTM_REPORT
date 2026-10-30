@@ -21,6 +21,14 @@ class InterfaceResultRead(BaseModel):
     ip_address: str
     status: str
     protocol: str
+    input_packets: int
+    output_packets: int
+    input_bytes: int
+    output_bytes: int
+    input_packets_per_second: float | None
+    output_packets_per_second: float | None
+    input_bytes_per_second: float | None
+    output_bytes_per_second: float | None
     input_errors: int
     crc_errors: int
     output_errors: int

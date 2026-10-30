@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   latency_warning_ms: 50,
   latency_critical_ms: 150,
   scheduler_interval_minutes: 15,
+  scheduler_cooldown_seconds: 5,
   max_concurrent_checks: 3,
 };
 
@@ -284,17 +285,17 @@ export const SettingsPage: React.FC = () => {
           <div className="card-body p-4 pt-2">
             <div className="row g-3">
               <div className="col-12 col-md-6">
-                <label className="form-label small fw-semibold text-muted">Chu kỳ kiểm tra tự động (Phút)</label>
+                <label className="form-label small fw-semibold text-muted">Thời gian nghỉ giữa hai vòng (Giây)</label>
                 <input
                   type="number"
                   min="1"
-                  max="1440"
+                  max="300"
                   className="form-control font-monospace"
-                  value={formData.scheduler_interval_minutes}
-                  onChange={(e) => handleChange('scheduler_interval_minutes', parseInt(e.target.value) || 15)}
+                  value={formData.scheduler_cooldown_seconds}
+                  onChange={(e) => handleChange('scheduler_cooldown_seconds', parseInt(e.target.value) || 5)}
                   required
                 />
-                <div className="form-text small">Khoảng thời gian giữa các lần tự động quét (1 - 1440 phút)</div>
+                <div className="form-text small">Quét xong toàn bộ router, nghỉ 1–300 giây rồi tự quét tiếp</div>
               </div>
 
               <div className="col-12 col-md-6">

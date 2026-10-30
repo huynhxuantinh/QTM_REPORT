@@ -194,6 +194,10 @@ class CiscoIosCollector:
         )
         return replace(
             interface,
+            input_packets=counters.input_packets,
+            output_packets=counters.output_packets,
+            input_bytes=counters.input_bytes,
+            output_bytes=counters.output_bytes,
             input_errors=counters.input_errors,
             crc_errors=counters.crc_errors,
             output_errors=counters.output_errors,

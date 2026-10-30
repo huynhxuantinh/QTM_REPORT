@@ -13,6 +13,7 @@ class SystemSettingPayload(BaseModel):
     latency_warning_ms: float = Field(ge=0)
     latency_critical_ms: float = Field(ge=0)
     scheduler_interval_minutes: int = Field(ge=1, le=1440)
+    scheduler_cooldown_seconds: int = Field(ge=1, le=300)
     max_concurrent_checks: int = Field(ge=1, le=10)
 
     @model_validator(mode="after")

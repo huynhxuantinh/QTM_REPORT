@@ -397,6 +397,10 @@ export const DeviceDetailPage: React.FC = () => {
                       <th className="py-2.5">IP Address</th>
                       <th className="py-2.5">Trạng thái vật lý</th>
                       <th className="py-2.5">Trạng thái giao thức</th>
+                      <th className="py-2.5 text-end">Gói vào/s</th>
+                      <th className="py-2.5 text-end">Gói ra/s</th>
+                      <th className="py-2.5 text-end">Dữ liệu vào/s</th>
+                      <th className="py-2.5 text-end">Dữ liệu ra/s</th>
                       <th className="py-2.5 text-end">Lỗi đầu vào</th>
                       <th className="py-2.5 text-end">Lỗi CRC</th>
                       <th className="pe-3 py-2.5 text-end">Gói đầu ra bị bỏ</th>
@@ -428,6 +432,26 @@ export const DeviceDetailPage: React.FC = () => {
                           >
                             {intf.protocol.toLowerCase() === 'up' ? 'Hoạt động' : 'Ngừng'}
                           </span>
+                        </td>
+                        <td className="text-end font-monospace">
+                          {intf.input_packets_per_second == null
+                            ? '—'
+                            : intf.input_packets_per_second.toFixed(2)}
+                        </td>
+                        <td className="text-end font-monospace">
+                          {intf.output_packets_per_second == null
+                            ? '—'
+                            : intf.output_packets_per_second.toFixed(2)}
+                        </td>
+                        <td className="text-end font-monospace">
+                          {intf.input_bytes_per_second == null
+                            ? '—'
+                            : `${formatBytes(intf.input_bytes_per_second)}/s`}
+                        </td>
+                        <td className="text-end font-monospace">
+                          {intf.output_bytes_per_second == null
+                            ? '—'
+                            : `${formatBytes(intf.output_bytes_per_second)}/s`}
                         </td>
                         <td className="text-end font-monospace">{intf.input_errors}</td>
                         <td className="text-end font-monospace">{intf.crc_errors}</td>

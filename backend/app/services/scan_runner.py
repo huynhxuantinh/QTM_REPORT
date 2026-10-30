@@ -16,19 +16,24 @@ from app.repositories.settings import SystemSettingRepository
 logger = logging.getLogger(__name__)
 
 
+def calculate_worker_count(device_count: int, configured_limit: int) -> int:
+    """Bound concurrent SSH work by active devices and the saved limit."""
+    return max(1, min(device_count, configured_limit))
+
+
 class ThreadedScanRunner:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
     def __call__(self, scan_id: int) -> None:
         Thread(
-            target=self._run,
+            target=self.run_sync,
             args=(scan_id,),
             name=f"scan-run-{scan_id}",
             daemon=True,
         ).start()
 
-    def _run(self, scan_id: int) -> None:
+    def run_sync(self, scan_id: int) -> None:
         try:
             with SessionLocal() as session:
                 check_ids = ScanRunService(session).check_ids(scan_id)
@@ -36,6 +41,10 @@ class ThreadedScanRunner:
                     SystemSettingRepository(session)
                     .get_or_create()
                     .max_concurrent_checks
+                )
+                max_workers = calculate_worker_count(
+                    len(check_ids),
+                    max_workers,
                 )
             with ThreadPoolExecutor(
                 max_workers=max_workers,

@@ -47,6 +47,10 @@ class InterfaceMetrics:
     ip_address: str
     status: str
     protocol: str
+    input_packets: int = 0
+    output_packets: int = 0
+    input_bytes: int = 0
+    output_bytes: int = 0
     input_errors: int = 0
     crc_errors: int = 0
     output_errors: int = 0
@@ -55,6 +59,10 @@ class InterfaceMetrics:
 
 @dataclass(frozen=True, slots=True)
 class InterfaceCounters:
+    input_packets: int = 0
+    output_packets: int = 0
+    input_bytes: int = 0
+    output_bytes: int = 0
     input_errors: int = 0
     crc_errors: int = 0
     output_errors: int = 0

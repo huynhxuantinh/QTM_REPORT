@@ -7,6 +7,14 @@ export interface InterfaceResult {
   ip_address: string;
   status: string;
   protocol: string;
+  input_packets: number;
+  output_packets: number;
+  input_bytes: number;
+  output_bytes: number;
+  input_packets_per_second: number | null;
+  output_packets_per_second: number | null;
+  input_bytes_per_second: number | null;
+  output_bytes_per_second: number | null;
   input_errors: number;
   crc_errors: number;
   output_errors: number;

@@ -35,6 +35,25 @@ class HealthCheckRepository:
             )
         )
 
+    def latest_succeeded(
+        self,
+        device_id: int,
+        *,
+        before_check_id: int,
+    ) -> HealthCheck | None:
+        return self._session.scalar(
+            select(HealthCheck)
+            .where(
+                HealthCheck.device_id == device_id,
+                HealthCheck.execution_status == "succeeded",
+                HealthCheck.checked_at.is_not(None),
+                HealthCheck.id != before_check_id,
+            )
+            .options(selectinload(HealthCheck.interfaces))
+            .order_by(HealthCheck.checked_at.desc(), HealthCheck.id.desc())
+            .limit(1)
+        )
+
     def save(self, health_check: HealthCheck) -> HealthCheck:
         self._session.add(health_check)
         self._session.commit()

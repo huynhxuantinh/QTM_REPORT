@@ -39,6 +39,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "scheduler_interval_minutes": (
                         stored.scheduler_interval_minutes
                     ),
+                    "scheduler_cooldown_seconds": (
+                        stored.scheduler_cooldown_seconds
+                    ),
                     "max_concurrent_checks": stored.max_concurrent_checks,
                 }
             )
